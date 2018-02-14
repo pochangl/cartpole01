@@ -3,70 +3,67 @@ import numpy as np
 import gym
 
 env = gym.make('CartPole-v0')
-
-num_states = 1000
+failures = []
 num_actions = env.action_space.n
 
 # configuration
-input_nodes = 10
-layer1_nodes = 20
-layer2_nodes = 40
-output_nodes = 1
-action_sets = [[1, 0], [0, 1]]
-discount_rate = 0.9
-learning_rate = 0.5
 
+action_sets = [[1, 0], [0, 1]]
+learning_rate = 0.1
 
 # inputs
-prev_state = tf.placeholder(tf.float32, shape=[None, 4])
+_state = tf.placeholder(tf.float32, shape=[None, 4])
 state = tf.placeholder(tf.float32, shape=[None, 4])
 action = tf.placeholder(tf.float32, shape=[None, 2])
 
 """
     beginning of grpah
 """
-inputs = tf.concat([state, prev_state-state, action], 1)
-Q = tf.Variable(tf.zeros([input_nodes, layer1_nodes]), dtype=tf.float32)
 
-# layers
-layer1_weights = tf.Variable(tf.random_normal([input_nodes, layer1_nodes], mean=0.1), dtype=tf.float32)
-layer1_bias = tf.Variable(tf.random_normal([layer1_nodes], mean=0.1), dtype=tf.float32)
+def fdnn(inputs, sizes):
+    # layers
+    input_size = sizes[0]
+    for size in sizes[1:]:
+        weights = tf.Variable(tf.random_normal([input_size, size], mean=0.1), dtype=tf.float32)
+        bias = tf.Variable(tf.random_normal([size], mean=0.1), dtype=tf.float32)
+        inputs = tf.nn.dropout(tf.matmul(inputs, weights) + bias, 0.1)
+    return inputs
 
-layer2_weights = tf.Variable(tf.random_normal([layer1_nodes, layer2_nodes], mean=0.1), dtype=tf.float32)
-layer2_bias = tf.Variable(tf.random_normal([layer2_nodes], mean=0.1), dtype=tf.float32)
-
-# output layer
-output_weights = tf.Variable(tf.random_normal([layer2_nodes, output_nodes], mean=0.1), dtype=tf.float32)
-output_bias = tf.Variable(tf.random_normal([output_nodes], mean=0.1), dtype=tf.float32)
-
-# flow
-layer1_outputs = tf.nn.dropout(tf.matmul(inputs, layer1_weights) + layer1_bias, 0.1)
-layer2_outputs = tf.nn.dropout(tf.matmul(tf.nn.relu(layer1_outputs), layer2_weights) + layer2_bias, 0.1)
-Q = tf.matmul(layer2_outputs, output_weights) + output_bias
-
+prediction_inputs = tf.concat([state, action], 1)
+prediction = fdnn(prediction_inputs, [6, 10, 10, 4])
+value = fdnn(prediction, [4, 1])
 """
     end of graph
     beginning of logic
 """
 
 Q_ = tf.placeholder(tf.float32, shape=[1, 1])
-sqrt = tf.squared_difference(Q, Q_)
+sqrt = tf.squared_difference(state, prediction)
 cross_entropy = tf.reduce_sum(sqrt)
+prediction_trainer = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
-trainer = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+def train_failures():
+    if not len(failures):
+        return
+
+
+def train_predictions():
+    if not len(history)
+        return
 
 
 def run():
     with tf.Session() as session:
         session.run(tf.global_variables_initializer())
+        # first attempt
         for episode in range(20000):
-            pre_prev_observation = prev_observation = observation = env.reset()
-            reward = 0
-            current_action = [1, 0]
+            observation = env.reset()
             max_Q = 0
             total_steps = total_steps if episode % 100 else 0
 
             for current_step in range(1000):
+                train_failures()
+                train_predictions()
                 prev_max_Q = max_Q
                 prev_action = current_action
                 pre_prev_observation, prev_observation = prev_observation, observation
@@ -99,7 +96,8 @@ def run():
                     action: [prev_action],
                     Q_: [[new_Q]],
                 }
-                _, loss = session.run((trainer, cross_entropy), feed_dict=train_dict)
+                if current_step >= 2:
+                    _, loss = session.run((trainer, cross_entropy), feed_dict=train_dict)
                 # print ('loss: %s' % loss)
                 prev_action = current_action
                 if done:
