@@ -1,8 +1,11 @@
-from reinforcement.environment import BaseEnvironment
 import gym
+from collections import namedtuple
+from reinforcement.environment import BaseEnvironment
+
+Observation = namedtuple('Observation', ['state', '_state', 'action', 'done', '_reward'])
 
 
-class GameNotSpecifiedError(NotImplementedError):
+class GameNotSpecifiedError(ValueError):
   pass
 
 
@@ -26,7 +29,6 @@ class OpenAIGymEnvironment(BaseEnvironment):
       raise GameNotSpecifiedError('OpenAIGymStrategy requires either name or env')
 
   def reset(self):
-    self._reset()
     self.initial_states = self.state = self.env.reset()
 
   def observe(self):

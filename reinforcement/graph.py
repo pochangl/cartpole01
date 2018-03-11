@@ -1,8 +1,10 @@
 '''
     Draph is TensorFlow graph management Class
 '''
+import tensorflow as tf
 
-class Graph:
+
+class ReinforcementGraph:
     '''
         graph class for manipulating TensorFlow graph
     '''
@@ -16,25 +18,24 @@ class Graph:
     def __init__(self):
         self.build()
 
+    def define_inputs(self):
+        '''
+            define input place holders here
+        '''
+        raise NotImplementedError()
+
     def build_preprocess_graph(self):
         '''
             process input for better manipulation
         '''
         return self.ipt
 
-    def build_graph(self, iput):
+    def build_reward_graph(self):
         '''
             build main logic
         '''
-        return iput
 
-    def build_decision_graph(self, iput, oput):
-        '''
-            making decision
-        '''
-        return iput
-
-    def build_trainers(self, *args, **kwargs):
+    def build_trainers(self):
         '''
             get trains
         '''
@@ -44,8 +45,24 @@ class Graph:
         '''
             build the overall graph
         '''
-        self.pre_iput = pre_iput = self.build_preprocess_graph()
-        self.oput = oput = self.build_graph(iput=pre_iput)
-        self.oput_
-        self.build_decision = decision = self.build_decision_graph(iput=pre_iput, oput=oput)
-        self.trainers = self.build_trainers(iput=pre_iput, oput=oput, decision=decision)
+        self.define_inputs()
+        self.preprocessed_input = self.build_preprocess_graph()
+        self.reward = self.build_reward_graph()
+        self.trainers = self.build_trainers()
+        assert issubclass(self.trainers, [list, tuple])
+
+    def build_fc_nn(self, input, sizes, activation_function, prefix=''):
+        # layers
+        input_size = int(input.shape[-1])
+        for layer, size in enumerate(sizes, 1):
+            weights = tf.Variable(tf.random_normal([input_size, size], mean=0), dtype=tf.float32, name='layer_%d_weight' % layer)
+            bias = tf.Variable(tf.random_normal([size], mean=0), dtype=tf.float32, name='layer_%d_bias' % layer)
+            input = activation_function(tf.matmul(input, weights) + bias, name='layer_%d_output' % layer)
+            input_size = size
+        return input
+    
+    def get_step_arguments(self, state):
+        raise NotImplementedError()
+
+    def get_training_arguments(self, observations):
+        raise NotImplementedError()
